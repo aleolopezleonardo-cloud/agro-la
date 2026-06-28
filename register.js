@@ -1,8 +1,9 @@
-import { sql } from '@vercel/postgres';
-import bcrypt from 'bcryptjs';
-import { ensureSchema, signToken } from '../lib/db.js';
+const { sql } = require('@vercel/postgres');
+const bcrypt = require('bcryptjs');
+const { randomUUID } = require('crypto');
+const { ensureSchema, signToken } = require('../lib/db.js');
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido' });
   try {
     await ensureSchema();
@@ -14,15 +15,15 @@ export default async function handler(req, res) {
     const exists = await sql`SELECT id FROM users WHERE email = ${e}`;
     if (exists.rows.length) return res.status(409).json({ error: 'Ese email ya está registrado' });
 
-    const id = crypto.randomUUID();
+    const id = randomUUID();
     const hash = await bcrypt.hash(password, 10);
     const nm = String(name || '').trim() || null;
     await sql`INSERT INTO users (id, email, password_hash, name) VALUES (${id}, ${e}, ${hash}, ${nm})`;
 
     const user = { id, email: e, name: nm || '' };
-    return res.json({ token: signToken(user), user });
+    return res.status(200).json({ token: signToken(user), user });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Error del servidor: ' + err.message });
   }
-}
+};

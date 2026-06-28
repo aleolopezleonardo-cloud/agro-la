@@ -1,11 +1,11 @@
-import { sql } from '@vercel/postgres';
-import jwt from 'jsonwebtoken';
+const { sql } = require('@vercel/postgres');
+const jwt = require('jsonwebtoken');
 
 const SECRET = process.env.JWT_SECRET || 'cambia-esta-clave-en-vercel';
 
 let _ensured = false;
 // Crea las tablas la primera vez que se usan (sin pasos manuales).
-export async function ensureSchema() {
+async function ensureSchema() {
   if (_ensured) return;
   await sql`CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
@@ -26,14 +26,16 @@ export async function ensureSchema() {
   _ensured = true;
 }
 
-export function signToken(user) {
+function signToken(user) {
   return jwt.sign({ uid: user.id, email: user.email, name: user.name || '' }, SECRET, { expiresIn: '90d' });
 }
 
 // Devuelve el payload del usuario autenticado, o null.
-export function getUser(req) {
+function getUser(req) {
   const h = req.headers.authorization || '';
   const t = h.startsWith('Bearer ') ? h.slice(7) : null;
   if (!t) return null;
-  try { return jwt.verify(t, SECRET); } catch { return null; }
+  try { return jwt.verify(t, SECRET); } catch (e) { return null; }
 }
+
+module.exports = { ensureSchema, signToken, getUser };

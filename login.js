@@ -1,8 +1,8 @@
-import { sql } from '@vercel/postgres';
-import bcrypt from 'bcryptjs';
-import { ensureSchema, signToken } from '../lib/db.js';
+const { sql } = require('@vercel/postgres');
+const bcrypt = require('bcryptjs');
+const { ensureSchema, signToken } = require('../lib/db.js');
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido' });
   try {
     await ensureSchema();
@@ -18,9 +18,9 @@ export default async function handler(req, res) {
     if (!ok) return res.status(401).json({ error: 'Email o contraseña incorrectos' });
 
     const user = { id: row.id, email: row.email, name: row.name || '' };
-    return res.json({ token: signToken(user), user });
+    return res.status(200).json({ token: signToken(user), user });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Error del servidor: ' + err.message });
   }
-}
+};

@@ -2,7 +2,6 @@
   "name": "agro-la",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
   "description": "Agro LA — App de gestión hortícola multiusuario",
   "dependencies": {
     "@vercel/postgres": "^0.10.0",
