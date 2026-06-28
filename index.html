@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#15803d">
+<title>Agro LA — Gestión de Cultivos</title>
+<style>
+:root{
+  --verde:#16a34a; --verde-osc:#15803d; --verde-mas:#166534; --verde-claro:#e7f7ec; --verde-suave:#d3eedb;
+  --lima:#84cc16; --tierra:#8a5a32; --tierra-claro:#f4ede4;
+  --acento:#f59e0b; --rojo:#dc2626; --azul:#2563eb; --amarillo:#eab308;
+  --bg:#f4f9f5; --gris:#64748b; --gris-claro:#f1f5f2; --borde:#e3ece6;
+  --texto:#15241b; --texto-suave:#5a6b61; --blanco:#ffffff;
+  --sombra:0 1px 2px rgba(16,40,24,.06),0 6px 18px rgba(16,40,24,.06);
+  --sombra-fuerte:0 12px 38px rgba(16,40,24,.20);
+  --radio:18px; --radio-sm:11px;
+  --fuente:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:var(--fuente);background:var(--bg);color:var(--texto);font-size:15px;line-height:1.45;overflow:hidden}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;font-size:inherit}
+input,select,textarea{font-family:inherit;font-size:15px;width:100%;padding:11px 13px;border:1.5px solid var(--borde);border-radius:var(--radio-sm);background:var(--blanco);color:var(--texto);outline:none;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--verde);box-shadow:0 0 0 3px rgba(22,163,74,.12)}
+textarea{resize:vertical;min-height:74px}
+label{display:block;font-weight:600;font-size:13px;margin-bottom:6px;color:var(--texto-suave)}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#c4d6cb;border-radius:6px}
+
+/* ===== AUTH ===== */
+#auth{position:fixed;inset:0;z-index:500;display:none;align-items:center;justify-content:center;padding:22px;
+  background:radial-gradient(120% 120% at 50% 0%,#1f9d52 0%,#15803d 45%,#0f5c2c 100%);overflow:auto}
+#auth.ver{display:flex}
+.auth-card{width:100%;max-width:410px;background:var(--blanco);border-radius:24px;box-shadow:var(--sombra-fuerte);padding:30px 26px;animation:subir .3s ease}
+.auth-logo{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:22px}
+.auth-logo .nom{font-size:26px;font-weight:800;letter-spacing:.5px}
+.auth-logo .nom b{color:var(--verde-osc)}
+.auth-logo .sl{font-size:13px;color:var(--texto-suave);font-weight:600}
+.auth-tabs{display:flex;background:var(--gris-claro);border-radius:12px;padding:4px;margin-bottom:20px}
+.auth-tab{flex:1;padding:10px;border-radius:9px;font-weight:700;font-size:14px;color:var(--texto-suave)}
+.auth-tab.activo{background:var(--blanco);color:var(--verde-osc);box-shadow:var(--sombra)}
+.auth-card .campo{margin-bottom:14px}
+.auth-msg{font-size:13px;color:var(--rojo);min-height:18px;margin-bottom:6px;font-weight:600}
+.auth-foot{text-align:center;font-size:12px;color:var(--texto-suave);margin-top:16px}
+
+/* ===== Layout ===== */
+#app{display:none;height:100vh;height:100dvh;overflow:hidden}
+#app.ver{display:flex}
+#sidebar{width:250px;flex-shrink:0;background:linear-gradient(170deg,#15803d,#0f6330);color:#fff;display:flex;flex-direction:column;padding:18px 12px;overflow-y:auto}
+.brand{display:flex;align-items:center;gap:11px;padding:6px 8px 16px;font-weight:800;font-size:20px;letter-spacing:.3px}
+.brand .logo{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:#fff;box-shadow:0 4px 10px rgba(0,0,0,.18);overflow:hidden}
+.brand .logo svg{width:30px;height:30px}
+.nav-item{display:flex;align-items:center;gap:13px;padding:12px 14px;border-radius:12px;color:#eafff0;font-weight:600;font-size:14.5px;margin-bottom:3px;transition:background .15s;width:100%;text-align:left}
+.nav-item .ic{font-size:18px;width:22px;text-align:center}
+.nav-item:hover{background:rgba(255,255,255,.10)}
+.nav-item.activo{background:#fff;color:var(--verde-osc)}
+.nav-sep{height:1px;background:rgba(255,255,255,.16);margin:10px 8px}
+.nav-user{margin-top:auto;padding:12px 10px 2px}
+.nav-user .u{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.10);padding:10px 12px;border-radius:12px}
+.nav-user .av{width:34px;height:34px;border-radius:50%;background:#fff;color:var(--verde-osc);display:grid;place-items:center;font-weight:800;flex-shrink:0}
+.nav-user .nm{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-user .em{font-size:11px;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{display:flex;align-items:center;gap:14px;padding:15px 26px;background:var(--blanco);border-bottom:1px solid var(--borde);flex-shrink:0}
+.topbar h1{font-size:21px;font-weight:800;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar .sub{font-size:12.5px;color:var(--texto-suave);font-weight:500}
+#content{flex:1;overflow-y:auto;padding:24px 26px 90px;-webkit-overflow-scrolling:touch}
+.menu-btn{display:none}
+
+/* Botones */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 17px;border-radius:12px;font-weight:700;font-size:14px;background:var(--verde);color:#fff;box-shadow:0 3px 10px rgba(22,163,74,.28);transition:transform .08s,filter .15s}
+.btn:hover{filter:brightness(1.05)}.btn:active{transform:scale(.97)}
+.btn.full{width:100%;padding:13px}
+.btn.sec{background:var(--blanco);color:var(--texto);border:1.5px solid var(--borde);box-shadow:none}
+.btn.peligro{background:var(--rojo);box-shadow:none}
+.btn.sm{padding:8px 12px;font-size:13px;border-radius:10px}
+.btn.ghost{background:var(--verde-claro);color:var(--verde-osc);box-shadow:none}
+.fab{position:fixed;right:20px;bottom:80px;width:58px;height:58px;border-radius:50%;background:var(--verde);color:#fff;font-size:30px;display:none;place-items:center;box-shadow:var(--sombra-fuerte);z-index:30}
+
+/* Cards / grid */
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(255px,1fr))}
+.card{background:var(--blanco);border:1px solid var(--borde);border-radius:var(--radio);box-shadow:var(--sombra);overflow:hidden;transition:transform .12s,box-shadow .12s}
+.card.click{cursor:pointer}
+.card.click:hover{transform:translateY(-3px);box-shadow:var(--sombra-fuerte)}
+.card-body{padding:16px 17px}
+.card-tit{font-weight:800;font-size:16.5px;margin-bottom:3px;display:flex;align-items:center;gap:8px}
+.card-sub{color:var(--texto-suave);font-size:13px;margin-bottom:11px}
+.card-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;gap:10px}
+.card-row span:first-child{color:var(--texto-suave)}
+.card-row span:last-child{font-weight:600;text-align:right}
+.card-strip{height:6px;width:100%}
+
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:30px;font-size:11.5px;font-weight:700;background:var(--verde-claro);color:var(--verde-osc);white-space:nowrap}
+.chip.gris{background:#eef1ef;color:var(--gris)}
+.chip.azul{background:#e4edfd;color:var(--azul)}
+.chip.naranja{background:#fdefd9;color:#b9760f}
+.chip.rojo{background:#fce4e4;color:var(--rojo)}
+.chip.amarillo{background:#fbf4d4;color:#937c10}
+.chip.tierra{background:var(--tierra-claro);color:var(--tierra)}
+
+.stats{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:22px}
+.stat{background:var(--blanco);border:1px solid var(--borde);border-radius:var(--radio);padding:16px 18px;box-shadow:var(--sombra);position:relative;overflow:hidden}
+.stat::after{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--verde)}
+.stat .n{font-size:30px;font-weight:800;line-height:1}
+.stat .l{font-size:12.5px;color:var(--texto-suave);font-weight:600;margin-top:4px}
+.stat .ic{position:absolute;right:12px;top:12px;font-size:26px;opacity:.16}
+.panel-sec{margin:26px 0 12px;font-size:16px;font-weight:800;display:flex;align-items:center;gap:9px}
+.lista{background:var(--blanco);border:1px solid var(--borde);border-radius:var(--radio);box-shadow:var(--sombra);overflow:hidden}
+.li{display:flex;align-items:center;gap:13px;padding:13px 16px;border-bottom:1px solid var(--borde)}
+.li:last-child{border-bottom:none}
+.li .li-ic{width:38px;height:38px;border-radius:11px;background:var(--verde-claro);display:grid;place-items:center;font-size:18px;flex-shrink:0}
+.li .li-main{flex:1;min-width:0}
+.li .li-t{font-weight:700;font-size:14.5px}
+.li .li-s{font-size:12.5px;color:var(--texto-suave)}
+.li .li-r{text-align:right;font-size:13px;font-weight:600;white-space:nowrap}
+
+.toolbar{display:flex;gap:11px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+.search{flex:1;min-width:180px;position:relative}
+.search input{padding-left:38px}
+.search .si{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.5}
+.filtro{min-width:auto;width:auto;padding:11px 13px}
+.vacio{text-align:center;padding:54px 20px;color:var(--texto-suave)}
+.vacio .em{font-size:54px;margin-bottom:12px}
+.vacio h3{font-size:18px;margin-bottom:6px;color:var(--texto)}
+
+.det-head{background:var(--blanco);border:1px solid var(--borde);border-radius:var(--radio);box-shadow:var(--sombra);padding:20px 22px;margin-bottom:18px}
+.det-head h2{font-size:23px;font-weight:800;margin-bottom:4px}
+.det-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px}
+.det-grid{display:grid;gap:13px 22px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:16px}
+.df .dl{font-size:12px;color:var(--texto-suave);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.df .dv{font-size:15px;font-weight:600;margin-top:2px}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--verde-osc);font-weight:700;margin-bottom:14px;font-size:14px}
+.tabs{display:flex;gap:6px;border-bottom:2px solid var(--borde);margin-bottom:18px;overflow-x:auto}
+.tab{padding:11px 16px;font-weight:700;font-size:14px;color:var(--texto-suave);border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+.tab.activo{color:var(--verde-osc);border-bottom-color:var(--verde)}
+.sub-add{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.sub-add h3{font-size:16px;font-weight:800}
+.timeline .li-ic{background:var(--tierra-claro)}
+
+.fotos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:9px;margin-top:8px}
+.foto-th{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;background:var(--gris-claro);border:1px solid var(--borde)}
+.foto-th img{width:100%;height:100%;object-fit:cover;display:block;cursor:pointer}
+.foto-th .del{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:14px;display:grid;place-items:center}
+.foto-add{aspect-ratio:1;border:2px dashed var(--borde);border-radius:12px;display:grid;place-items:center;color:var(--texto-suave);font-size:13px;text-align:center;gap:3px;background:var(--gris-claro);cursor:pointer}
+.foto-add .pl{font-size:26px}
+
+.overlay{position:fixed;inset:0;background:rgba(15,30,20,.55);backdrop-filter:blur(2px);display:none;align-items:flex-end;justify-content:center;z-index:100}
+.overlay.abierto{display:flex}
+.modal{background:var(--blanco);width:100%;max-width:560px;max-height:92vh;border-radius:24px 24px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--sombra-fuerte);animation:subir .25s ease}
+@keyframes subir{from{transform:translateY(40px);opacity:.5}to{transform:translateY(0);opacity:1}}
+.modal-head{padding:18px 22px;border-bottom:1px solid var(--borde);display:flex;align-items:center;justify-content:space-between}
+.modal-head h3{font-size:18px;font-weight:800}
+.modal-x{width:34px;height:34px;border-radius:50%;background:var(--gris-claro);display:grid;place-items:center;font-size:18px}
+.modal-body{padding:20px 22px;overflow-y:auto}
+.modal-foot{padding:15px 22px;border-top:1px solid var(--borde);display:flex;gap:11px}
+.modal-foot .btn{flex:1}
+.campo{margin-bottom:15px}
+.campo-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hint{font-size:12px;color:var(--texto-suave);margin-top:4px}
+
+.visor{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:200;padding:20px}
+.visor.abierto{display:flex}
+.visor img{max-width:100%;max-height:100%;border-radius:10px}
+.visor .cerrar{position:absolute;top:18px;right:20px;color:#fff;font-size:34px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--texto);color:#fff;padding:13px 22px;border-radius:30px;font-weight:600;font-size:14px;box-shadow:var(--sombra-fuerte);z-index:600;transition:transform .3s;max-width:90%;text-align:center}
+.toast.ver{transform:translateX(-50%) translateY(0)}
+.cargando{display:grid;place-items:center;padding:60px;color:var(--texto-suave)}
+.spin{width:34px;height:34px;border:3px solid var(--verde-suave);border-top-color:var(--verde);border-radius:50%;animation:girar .8s linear infinite;margin-bottom:12px}
+@keyframes girar{to{transform:rotate(360deg)}}
+.info-prosa h4{color:var(--verde-osc);font-size:14px;margin:14px 0 4px;text-transform:uppercase;letter-spacing:.5px}
+.info-prosa p{font-size:14.5px;margin-bottom:4px}
+
+.bottom-nav{display:none}
+@media(max-width:860px){
+  #sidebar{display:none}
+  .menu-btn{display:grid;place-items:center;width:40px;height:40px;border-radius:11px;background:var(--gris-claro);font-size:20px}
+  #content{padding:18px 15px 96px}
+  .topbar{padding:13px 16px}
+  .topbar h1{font-size:18px}
+  .fab{display:grid}
+  .bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--blanco);border-top:1px solid var(--borde);z-index:40;padding:6px 4px 8px;justify-content:space-around}
+  .bn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 8px;border-radius:10px;color:var(--gris);font-size:10.5px;font-weight:700;flex:1}
+  .bn .ic{font-size:20px}
+  .bn.activo{color:var(--verde-osc)}
+  .det-grid{grid-template-columns:1fr 1fr}
+  .campo-2{grid-template-columns:1fr}
+}
+@media(min-width:861px){.modal{border-radius:24px;align-self:center}.overlay{align-items:center}}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN / REGISTRO ===== -->
+<div id="auth">
+  <div class="auth-card">
+    <div class="auth-logo"><div id="authLogo"></div>
+      <div class="nom">Agro<b>LA</b></div>
+      <div class="sl">🌱 Gestión de tu huerta, en cualquier lado</div>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab activo" id="tabLogin" onclick="setAuthTab('login')">Ingresar</button>
+      <button class="auth-tab" id="tabReg" onclick="setAuthTab('reg')">Crear cuenta</button>
+    </div>
+    <div id="campoNombre" class="campo" style="display:none"><label>Nombre</label><input id="aNombre" placeholder="Tu nombre"></div>
+    <div class="campo"><label>Email</label><input id="aEmail" type="email" inputmode="email" placeholder="tucorreo@ejemplo.com" autocomplete="username"></div>
+    <div class="campo"><label>Contraseña</label><input id="aPass" type="password" placeholder="Mínimo 6 caracteres" autocomplete="current-password"></div>
+    <div class="auth-msg" id="authMsg"></div>
+    <button class="btn full" id="authBtn" onclick="enviarAuth()">Ingresar</button>
+    <div class="auth-foot">Tus datos quedan guardados en la nube y sincronizados entre tus dispositivos.</div>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app">
+  <nav id="sidebar">
+    <div class="brand"><div class="logo" id="brandLogo"></div><div>Agro<span style="color:var(--lima)">LA</span></div></div>
+    <div id="navMenu"></div>
+    <div class="nav-user">
+      <div class="u"><div class="av" id="userAv">A</div><div style="min-width:0"><div class="nm" id="userNm">Usuario</div><div class="em" id="userEm"></div></div></div>
+    </div>
+    <div style="font-size:11px;color:rgba(255,255,255,.55);text-align:center;padding:10px 0 2px">Agro LA · v1.0</div>
+  </nav>
+  <div id="main">
+    <header class="topbar">
+      <button class="menu-btn" onclick="verMasVistas()">☰</button>
+      <div style="flex:1;min-width:0"><h1 id="tituloVista">Panel</h1><div class="sub" id="subVista"></div></div>
+      <div id="accionTop"></div>
+    </header>
+    <main id="content"></main>
+  </div>
+</div>
+<button class="fab" id="fab" onclick="accionFab()">+</button>
+<nav class="bottom-nav" id="bottomNav"></nav>
+
+<div class="overlay" id="overlay" onclick="if(event.target===this)cerrarModal()">
+  <div class="modal">
+    <div class="modal-head"><h3 id="modalTit">Nuevo</h3><button class="modal-x" onclick="cerrarModal()">✕</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+<div class="visor" id="visor" onclick="cerrarVisor()"><span class="cerrar">✕</span><img id="visorImg" src="" alt=""></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   AGRO LA — Frontend (Vercel + Postgres, multiusuario)
+   ============================================================ */
+const $ = s => document.querySelector(s);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+const esc = s => (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const hoy = () => new Date().toISOString().slice(0,10);
+function fmtFecha(d){ if(!d) return '—'; const p=String(d).split('-'); return p.length===3? `${p[2]}/${p[1]}/${p[0]}` : d; }
+function diasEntre(a,b){ return Math.round((new Date(b)-new Date(a))/86400000); }
+function num(v){ const n=parseFloat(v); return isNaN(n)?0:n; }
+function fmtNum(n){ return (Math.round(n*100)/100).toLocaleString('es-AR'); }
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('ver'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('ver'),2600); }
+
+/* ---------- LOGO (ícono con imagen vectorial) ---------- */
+function logoSVG(){ return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22c55e"/><stop offset="1" stop-color="#15803d"/></linearGradient></defs>
+  <circle cx="32" cy="32" r="30" fill="url(#lg)"/>
+  <path d="M14 46 Q32 38 50 46" stroke="#a3e635" stroke-width="3.5" fill="none" stroke-linecap="round" opacity=".9"/>
+  <path d="M32 50 V28" stroke="#eafff0" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+  <path d="M32 34 C24 34 18 28 18 20 C28 20 32 25 32 34 Z" fill="#eafff0"/>
+  <path d="M32 30 C40 30 46 24 46 16 C36 16 32 21 32 30 Z" fill="#d9ffe6"/>
+  <circle cx="32" cy="14" r="3.2" fill="#fde047"/>
+</svg>`; }
+
+/* ---------- API ---------- */
+let TOKEN = localStorage.getItem('agrola_token') || null;
+let USER = null;
+async function api(path, opts={}){
+  const headers = Object.assign({'Content-Type':'application/json'}, opts.headers||{});
+  if(TOKEN) headers.Authorization = 'Bearer '+TOKEN;
+  let r;
+  try{ r = await fetch('/api/'+path, {...opts, headers}); }
+  catch(e){ throw new Error('Sin conexión con el servidor'); }
+  if(r.status===401){ if(USER){ cerrarSesion(true); } throw new Error('Sesión expirada'); }
+  let data=null; try{ data=await r.json(); }catch{}
+  if(!r.ok) throw new Error((data&&data.error)||('Error '+r.status));
+  return data;
+}
+/* capa de datos genérica (misma interfaz que antes) */
+function dbAll(store){ return api('records?store='+store); }
+function dbGet(store,id){ return api('records?store='+store+'&id='+encodeURIComponent(id)); }
+function dbPut(store,obj){ if(!obj.id) obj.id=uid(); return api('records',{method:'POST',body:JSON.stringify({store,record:obj})}).then(()=>obj); }
+function dbDel(store,id){ return api('records?store='+store+'&id='+encodeURIComponent(id),{method:'DELETE'}); }
+
+const STORES_DATOS=['cultivos','plantines','maquinaria','stock','tareas','infocultivos','aplicaciones','anotaciones','cosechas','mantenimientos','movimientos','fotos'];
+
+/* ---------- catálogos ---------- */
+const CULTIVOS_LISTA=['Cebolla de verdeo','Papa','Tomate','Pimiento','Ajo','Puerro','Cebolla','Repollo blanco','Repollo morado','Lechuga','Perejil','Remolacha','Zapallo','Maíz','Coliflor','Brócoli','Acelga','Zanahoria','Choclo','Otro'];
+const CATEGORIAS=['Hortalizas de hoja','Hortalizas de fruto','Hortalizas de raíz','Hortalizas de bulbo','Brássicas (crucíferas)','Aromáticas','Otro'];
+const ESTADOS_CULTIVO=['Planificado','En almácigo','Sembrado','Trasplantado','En crecimiento','En cosecha','Cosechado','Finalizado'];
+const TIPO_APLIC=['Fertilizante / Abono','Abono orgánico','Fertilizante foliar','Insecticida','Fungicida','Herbicida','Acaricida','Bactericida','Riego / Fertirriego','Otro'];
+const UNIDADES=['kg','g','L','ml','cc','bolsas','cajones','atados','unidades','horas','m³'];
+const CAT_STOCK=['Agroquímico','Fertilizante / Abono','Semilla','Plantín','Combustible','Repuesto','Herramienta','Insumo riego','Otro'];
+const TIPO_MANT=['Cambio de aceite','Filtros','Engrase','Reparación','Service general','Neumáticos','Sistema hidráulico','Refrigeración','Eléctrico','Otro'];
+const PRIORIDAD=['Alta','Media','Baja'];
+const COLOR_ESTADO={'Planificado':'gris','En almácigo':'amarillo','Sembrado':'tierra','Trasplantado':'azul','En crecimiento':'','En cosecha':'naranja','Cosechado':'naranja','Finalizado':'gris'};
+
+/* ---------- esquemas ---------- */
+const SCHEMAS={
+ cultivos:{ singular:'Cultivo', icono:'🌿', titulo:r=>r.nombre, sub:r=>[r.variedad,r.parcela].filter(Boolean).join(' · '),
+   campos:[
+    {k:'nombre',l:'Cultivo',t:'select',op:CULTIVOS_LISTA,req:1,libre:1},
+    {k:'categoria',l:'Categoría',t:'select',op:CATEGORIAS},
+    {k:'variedad',l:'Variedad',t:'text',ph:'Ej: Valenciana, Cherry...'},
+    {k:'chacarero',l:'Chacarero / Encargado',t:'text'},
+    {k:'parcela',l:'Parcela / Lote',t:'text',ph:'Ej: Lote 3, Quinta sur'},
+    {k:'estado',l:'Estado',t:'select',op:ESTADOS_CULTIVO,def:'Planificado'},
+    {k:'fechaSiembra',l:'Fecha de siembra',t:'date',media:1},
+    {k:'fechaTrasplante',l:'Fecha de trasplante',t:'date',media:1},
+    {k:'fechaCosechaEst',l:'Cosecha estimada',t:'date',media:1},
+    {k:'fechaCosechaReal',l:'Cosecha real',t:'date',media:1},
+    {k:'superficie',l:'Superficie (m²)',t:'number',media:1},
+    {k:'cantSurcos',l:'Cantidad de surcos',t:'number',media:1},
+    {k:'largoSurco',l:'Largo de surco (m)',t:'number',media:1},
+    {k:'distSurco',l:'Distancia entre surcos (cm)',t:'number',media:1},
+    {k:'densidad',l:'Distancia entre plantas (cm)',t:'number',media:1},
+    {k:'origenPlanta',l:'Origen',t:'select',op:['Siembra directa','Plantín propio','Plantín comprado'],media:1},
+    {k:'notas',l:'Notas',t:'textarea'},
+   ]},
+ plantines:{ singular:'Almácigo / Plantín', icono:'🌱', titulo:r=>r.especie, sub:r=>[r.variedad,r.metodo].filter(Boolean).join(' · '),
+   campos:[
+    {k:'especie',l:'Especie',t:'select',op:CULTIVOS_LISTA,req:1,libre:1},
+    {k:'variedad',l:'Variedad',t:'text'},
+    {k:'metodo',l:'Método',t:'select',op:['Bandeja / speedling','Cama de almácigo','Cajón','Bandeja flotante','Siembra a chorrillo']},
+    {k:'fechaSiembra',l:'Fecha de siembra',t:'date',media:1},
+    {k:'cantidad',l:'Cantidad',t:'number',media:1},
+    {k:'unidadCant',l:'Unidad',t:'select',op:['plantines','bandejas','cajones','m²'],media:1},
+    {k:'sustrato',l:'Sustrato',t:'text',media:1,ph:'Turba, compost, mantillo...'},
+    {k:'fechaTrasplanteEst',l:'Trasplante estimado',t:'date',media:1},
+    {k:'germinacion',l:'% Germinación',t:'number',media:1},
+    {k:'estado',l:'Estado',t:'select',op:['Sembrado','Germinando','Listo para trasplante','Trasplantado','Descartado'],def:'Sembrado',media:1},
+    {k:'invernaculo',l:'Ubicación / Invernáculo',t:'text'},
+    {k:'notas',l:'Notas',t:'textarea'},
+   ]},
+ maquinaria:{ singular:'Máquina / Equipo', icono:'🚜', titulo:r=>r.nombre, sub:r=>[r.marca,r.modelo].filter(Boolean).join(' '),
+   campos:[
+    {k:'nombre',l:'Nombre',t:'text',req:1,ph:'Ej: Tractor principal'},
+    {k:'tipo',l:'Tipo',t:'select',op:['Tractor','Motocultivador','Implemento','Pulverizadora','Sembradora','Arado','Rastra','Bomba de riego','Camioneta','Herramienta','Otro']},
+    {k:'marca',l:'Marca',t:'text',media:1},
+    {k:'modelo',l:'Modelo',t:'text',media:1},
+    {k:'anio',l:'Año',t:'number',media:1},
+    {k:'identificacion',l:'Patente / N° serie',t:'text',media:1},
+    {k:'horometro',l:'Horómetro actual (hs)',t:'number',media:1},
+    {k:'estado',l:'Estado',t:'select',op:['Operativo','En mantenimiento','Fuera de servicio'],def:'Operativo',media:1},
+    {k:'notas',l:'Notas',t:'textarea'},
+   ]},
+ stock:{ singular:'Ítem de stock', icono:'📦', titulo:r=>r.nombre, sub:r=>r.categoria,
+   campos:[
+    {k:'nombre',l:'Nombre del producto',t:'text',req:1},
+    {k:'categoria',l:'Categoría',t:'select',op:CAT_STOCK,req:1},
+    {k:'cantidad',l:'Cantidad actual',t:'number',media:1},
+    {k:'unidad',l:'Unidad',t:'select',op:UNIDADES,media:1},
+    {k:'stockMin',l:'Stock mínimo (alerta)',t:'number',media:1},
+    {k:'costoUnit',l:'Costo unitario ($)',t:'number',media:1},
+    {k:'ubicacion',l:'Ubicación / Depósito',t:'text',media:1},
+    {k:'proveedor',l:'Proveedor',t:'text',media:1},
+    {k:'vencimiento',l:'Vencimiento',t:'date',media:1},
+    {k:'principioActivo',l:'Principio activo / Composición',t:'text'},
+    {k:'notas',l:'Notas',t:'textarea'},
+   ]},
+ tareas:{ singular:'Tarea', icono:'✅', titulo:r=>r.titulo, sub:r=>r.categoria,
+   campos:[
+    {k:'titulo',l:'Tarea',t:'text',req:1},
+    {k:'categoria',l:'Categoría',t:'select',op:['Siembra','Trasplante','Riego','Fertilización','Aplicación fitosanitaria','Carpida / Desmalezado','Cosecha','Mantenimiento','Compra','General']},
+    {k:'fechaVenc',l:'Fecha límite',t:'date',media:1},
+    {k:'prioridad',l:'Prioridad',t:'select',op:PRIORIDAD,def:'Media',media:1},
+    {k:'estado',l:'Estado',t:'select',op:['Pendiente','En curso','Hecha'],def:'Pendiente'},
+    {k:'notas',l:'Detalle',t:'textarea'},
+   ]},
+ infocultivos:{ singular:'Ficha de cultivo', icono:'📖', titulo:r=>r.cultivo, sub:r=>r.familia,
+   campos:[
+    {k:'cultivo',l:'Cultivo',t:'text',req:1},
+    {k:'familia',l:'Familia botánica',t:'text'},
+    {k:'ciclo',l:'Ciclo (días)',t:'text',media:1},
+    {k:'temporada',l:'Época de siembra',t:'text',media:1},
+    {k:'marco',l:'Marco de plantación',t:'text',media:1},
+    {k:'profundidad',l:'Profundidad de siembra',t:'text',media:1},
+    {k:'temperatura',l:'Temperatura óptima',t:'text',media:1},
+    {k:'riego',l:'Riego',t:'text',media:1},
+    {k:'fertilizacion',l:'Fertilización',t:'textarea'},
+    {k:'plagas',l:'Plagas comunes',t:'textarea'},
+    {k:'enfermedades',l:'Enfermedades comunes',t:'textarea'},
+    {k:'cosecha',l:'Cosecha',t:'textarea'},
+    {k:'rotacion',l:'Rotación / Asociación',t:'textarea'},
+    {k:'consejos',l:'Consejos del agrónomo',t:'textarea'},
+   ]},
+ aplicaciones:{ singular:'Aplicación', icono:'💧',
+   campos:[
+    {k:'fecha',l:'Fecha',t:'date',def:'hoy',req:1,media:1},
+    {k:'tipo',l:'Tipo',t:'select',op:TIPO_APLIC,media:1},
+    {k:'producto',l:'Producto',t:'text',req:1},
+    {k:'dosis',l:'Dosis',t:'text',media:1,ph:'Ej: 200 cc/100 L'},
+    {k:'cantidad',l:'Cantidad total',t:'number',media:1},
+    {k:'unidad',l:'Unidad',t:'select',op:UNIDADES,media:1},
+    {k:'descontar',l:'Descontar de stock',t:'select',op:[],media:1,stockRef:1},
+    {k:'objetivo',l:'Objetivo / Motivo',t:'text',ph:'Plaga, enfermedad o nutrición'},
+    {k:'carencia',l:'Días de carencia',t:'number',media:1},
+    {k:'responsable',l:'Responsable',t:'text',media:1},
+    {k:'notas',l:'Notas',t:'textarea'},
+   ]},
+ cosechas:{ singular:'Cosecha', icono:'🧺',
+   campos:[
+    {k:'fecha',l:'Fecha',t:'date',def:'hoy',req:1,media:1},
+    {k:'cantidad',l:'Cantidad',t:'number',req:1,media:1},
+    {k:'unidad',l:'Unidad',t:'select',op:['kg','cajones','atados','bolsas','unidades','docenas'],media:1},
+    {k:'calidad',l:'Calidad',t:'select',op:['Primera','Segunda','Tercera','Descarte'],media:1},
+    {k:'destino',l:'Destino',t:'text',media:1,ph:'Mercado, venta directa...'},
+    {k:'precio',l:'Precio unitario ($)',t:'number',media:1},
+    {k:'notas',l:'Notas',t:'textarea'},
+   ]},
+ anotaciones:{ singular:'Anotación', icono:'📝',
+   campos:[
+    {k:'fecha',l:'Fecha',t:'date',def:'hoy',req:1},
+    {k:'titulo',l:'Título',t:'text',req:1},
+    {k:'texto',l:'Observación',t:'textarea'},
+   ]},
+ mantenimientos:{ singular:'Mantenimiento', icono:'🔧',
+   campos:[
+    {k:'fecha',l:'Fecha',t:'date',def:'hoy',req:1,media:1},
+    {k:'tipo',l:'Tipo',t:'select',op:TIPO_MANT,media:1},
+    {k:'descripcion',l:'Descripción',t:'text',req:1},
+    {k:'horasMaquina',l:'Horómetro (hs)',t:'number',media:1},
+    {k:'proxHoras',l:'Próximo service a (hs)',t:'number',media:1},
+    {k:'proxFecha',l:'Próximo service (fecha)',t:'date',media:1},
+    {k:'repuestos',l:'Repuestos / Insumos',t:'text'},
+    {k:'costo',l:'Costo ($)',t:'number',media:1},
+    {k:'responsable',l:'Taller / Responsable',t:'text',media:1},
+    {k:'notas',l:'Notas',t:'textarea'},
+   ]},
+ movimientos:{ singular:'Movimiento de stock', icono:'🔄',
+   campos:[
+    {k:'fecha',l:'Fecha',t:'date',def:'hoy',req:1,media:1},
+    {k:'tipo',l:'Tipo',t:'select',op:['Entrada','Salida'],def:'Entrada',req:1,media:1},
+    {k:'cantidad',l:'Cantidad',t:'number',req:1,media:1},
+    {k:'motivo',l:'Motivo',t:'text',media:1,ph:'Compra, uso, ajuste...'},
+    {k:'notas',l:'Notas',t:'textarea'},
+   ]},
+};
+
+/* ---------- navegación ---------- */
+const VISTAS=[
+ {id:'panel',l:'Panel',ic:'📊'},
+ {id:'cultivos',l:'Cultivos',ic:'🌿'},
+ {id:'plantines',l:'Plantines',ic:'🌱'},
+ {id:'maquinaria',l:'Maquinaria',ic:'🚜'},
+ {id:'stock',l:'Stock',ic:'📦'},
+ {id:'tareas',l:'Tareas',ic:'✅'},
+ {id:'infocultivos',l:'Info Cultivos',ic:'📖'},
+ {id:'ajustes',l:'Ajustes',ic:'⚙️'},
+];
+const NAV_MOVIL=['panel','cultivos','stock','tareas','infocultivos'];
+let vista='panel', detalle=null, tabActiva={};
+
+function pintarNav(){
+ $('#navMenu').innerHTML = VISTAS.map(v=> v.id==='ajustes'? `<div class="nav-sep"></div>`+navBtn(v) : navBtn(v)).join('');
+ $('#bottomNav').innerHTML = NAV_MOVIL.map(id=>{ const v=VISTAS.find(x=>x.id===id); return `<button class="bn ${vista===id?'activo':''}" onclick="ir('${id}')"><span class="ic">${v.ic}</span>${v.l}</button>`; }).join('');
+}
+function navBtn(v){ return `<button class="nav-item ${vista===v.id?'activo':''}" onclick="ir('${v.id}')"><span class="ic">${v.ic}</span>${v.l}</button>`; }
+function ir(id){ vista=id; detalle=null; pintarNav(); render(); $('#content').scrollTop=0; }
+function verMasVistas(){ abrirModalRaw('Menú', VISTAS.map(v=>`<button class="nav-item" style="color:var(--texto)" onclick="cerrarModal();ir('${v.id}')"><span class="ic">${v.ic}</span>${v.l}</button>`).join(''), ''); }
+
+/* ---------- render ---------- */
+async function render(){
+ const v=VISTAS.find(x=>x.id===vista)||VISTAS[0];
+ $('#tituloVista').textContent = detalle? '' : v.l;
+ $('#subVista').textContent=''; $('#accionTop').innerHTML=''; pintarNav();
+ if(detalle){ return renderDetalle(); }
+ if(vista==='panel') return renderPanel();
+ if(vista==='ajustes') return renderAjustes();
+ if(vista==='infocultivos') return renderInfoLista();
+ return renderLista(vista);
+}
+function cargando(){ $('#content').innerHTML=`<div class="cargando"><div class="spin"></div>Cargando...</div>`; }
+
+/* ---------- PANEL ---------- */
+async function renderPanel(){
+ cargando();
+ try{
+ const [cul,pla,maq,stk,tar,mant]=await Promise.all([dbAll('cultivos'),dbAll('plantines'),dbAll('maquinaria'),dbAll('stock'),dbAll('tareas'),dbAll('mantenimientos')]);
+ const activos=cul.filter(c=>!['Finalizado','Cosechado'].includes(c.estado));
+ const pend=tar.filter(t=>t.estado!=='Hecha');
+ const bajo=stk.filter(s=>num(s.stockMin)>0 && num(s.cantidad)<=num(s.stockMin));
+ const hoyD=hoy();
+ const proxCos=activos.filter(c=>c.fechaCosechaEst).map(c=>({c,d:diasEntre(hoyD,c.fechaCosechaEst)})).filter(x=>x.d>=-7).sort((a,b)=>a.d-b.d).slice(0,6);
+ const proxMant=[];
+ for(const m of mant){ if(m.proxFecha){ const d=diasEntre(hoyD,m.proxFecha); if(d>=-30){ const mq=maq.find(x=>x.id===m.maquinaId); proxMant.push({m,mq,d}); } } }
+ proxMant.sort((a,b)=>a.d-b.d);
+ const tarOrden=pend.slice().sort((a,b)=>(a.fechaVenc||'9')<(b.fechaVenc||'9')?-1:1).slice(0,6);
+ const totalSup=activos.reduce((s,c)=>s+num(c.superficie),0);
+ $('#content').innerHTML=`
+  <div class="stats">
+    ${stat(activos.length,'Cultivos activos','🌿')}
+    ${stat(pla.filter(p=>p.estado!=='Trasplantado'&&p.estado!=='Descartado').length,'Almácigos en curso','🌱')}
+    ${stat(pend.length,'Tareas pendientes','✅')}
+    ${stat(bajo.length,'Stock bajo mínimo','⚠️')}
+    ${stat(fmtNum(totalSup)+' m²','Superficie en producción','📐')}
+    ${stat(maq.length,'Máquinas / equipos','🚜')}
+  </div>
+  <div style="display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))">
+   <div><div class="panel-sec">🧺 Próximas cosechas</div>
+    ${proxCos.length? `<div class="lista">${proxCos.map(x=>`
+      <div class="li click" onclick="abrirDetalle('cultivos','${x.c.id}')"><div class="li-ic">🌿</div>
+      <div class="li-main"><div class="li-t">${esc(x.c.nombre)}${x.c.variedad?` · ${esc(x.c.variedad)}`:''}</div>
+      <div class="li-s">${esc(x.c.parcela||'')} · estimada ${fmtFecha(x.c.fechaCosechaEst)}</div></div>
+      <div class="li-r">${etiquetaDias(x.d)}</div></div>`).join('')}</div>` : vacioMini('Sin cosechas programadas')}</div>
+   <div><div class="panel-sec">✅ Tareas pendientes</div>
+    ${tarOrden.length? `<div class="lista">${tarOrden.map(t=>`
+      <div class="li click" onclick="ir('tareas')"><div class="li-ic">${t.estado==='En curso'?'⏳':'◻️'}</div>
+      <div class="li-main"><div class="li-t">${esc(t.titulo)}</div>
+      <div class="li-s">${esc(t.categoria||'General')}${t.fechaVenc?` · vence ${fmtFecha(t.fechaVenc)}`:''}</div></div>
+      <div class="li-r">${chipPrioridad(t.prioridad)}</div></div>`).join('')}</div>` : vacioMini('Todo al día 👍')}</div>
+   <div><div class="panel-sec">⚠️ Stock bajo mínimo</div>
+    ${bajo.length? `<div class="lista">${bajo.map(s=>`
+      <div class="li click" onclick="abrirDetalle('stock','${s.id}')"><div class="li-ic">📦</div>
+      <div class="li-main"><div class="li-t">${esc(s.nombre)}</div><div class="li-s">${esc(s.categoria||'')}</div></div>
+      <div class="li-r"><span class="chip rojo">${fmtNum(num(s.cantidad))} ${esc(s.unidad||'')}</span></div></div>`).join('')}</div>` : vacioMini('Stock en orden')}</div>
+   <div><div class="panel-sec">🔧 Mantenimientos próximos</div>
+    ${proxMant.length? `<div class="lista">${proxMant.slice(0,6).map(x=>`
+      <div class="li click" onclick="abrirDetalle('maquinaria','${x.mq?x.mq.id:''}')"><div class="li-ic">🚜</div>
+      <div class="li-main"><div class="li-t">${esc(x.mq?x.mq.nombre:'Máquina')}</div>
+      <div class="li-s">${esc(x.m.tipo||x.m.descripcion||'')} · ${fmtFecha(x.m.proxFecha)}</div></div>
+      <div class="li-r">${etiquetaDias(x.d)}</div></div>`).join('')}</div>` : vacioMini('Nada programado')}</div>
+  </div>
+  <div class="panel-sec" style="margin-top:26px">⚡ Accesos rápidos</div>
+  <div class="grid">
+   ${accesoRapido('cultivos','🌿','Nuevo cultivo','Registrar una siembra')}
+   ${accesoRapido('plantines','🌱','Nuevo almácigo','Sembrar plantines')}
+   ${accesoRapido('maquinaria','🚜','Maquinaria','Mantenimientos y equipos')}
+   ${accesoRapido('stock','📦','Stock','Insumos y repuestos')}
+  </div>`;
+ }catch(e){ errorVista(e); }
+}
+function stat(n,l,ic){ return `<div class="stat"><span class="ic">${ic}</span><div class="n">${n}</div><div class="l">${l}</div></div>`; }
+function accesoRapido(v,ic,t,s){ return `<div class="card click" onclick="ir('${v}')"><div class="card-body"><div class="card-tit">${ic} ${t}</div><div class="card-sub">${s}</div></div></div>`; }
+function vacioMini(t){ return `<div class="lista"><div class="li"><div class="li-main"><div class="li-s">${t}</div></div></div></div>`; }
+function etiquetaDias(d){ if(d<0) return `<span class="chip rojo">vencido ${-d}d</span>`; if(d===0) return `<span class="chip naranja">hoy</span>`; if(d<=7) return `<span class="chip amarillo">en ${d}d</span>`; return `<span class="chip gris">en ${d}d</span>`; }
+function chipPrioridad(p){ const c=p==='Alta'?'rojo':p==='Baja'?'gris':'amarillo'; return `<span class="chip ${c}">${esc(p||'Media')}</span>`; }
+function errorVista(e){ $('#content').innerHTML=`<div class="vacio"><div class="em">⚠️</div><h3>No se pudo cargar</h3><p>${esc(e.message||'Error')}</p><br><button class="btn sec" onclick="render()">Reintentar</button></div>`; }
+
+/* ---------- LISTAS ---------- */
+let filtroBusqueda='', filtroSel='';
+async function renderLista(store){
+ const sc=SCHEMAS[store];
+ $('#accionTop').innerHTML=`<button class="btn" onclick="abrirForm('${store}')">＋ <span style="margin-left:2px">Nuevo</span></button>`;
+ cargando();
+ let datos; try{ datos=await dbAll(store); }catch(e){ return errorVista(e); }
+ const opcFiltro = store==='cultivos'? ['Activos','Cosechados','Finalizados',...CATEGORIAS]
+   : store==='stock'? CAT_STOCK
+   : store==='tareas'? ['Pendiente','En curso','Hecha']
+   : store==='maquinaria'? ['Operativo','En mantenimiento','Fuera de servicio']
+   : store==='plantines'? ['Sembrado','Germinando','Listo para trasplante','Trasplantado'] : [];
+ let lista=datos.filter(r=>coincide(sc,r,filtroBusqueda));
+ if(filtroSel){ lista=lista.filter(r=>filtraEspecial(store,r,filtroSel)); }
+ lista.sort((a,b)=> (a.fechaSiembra||a.fecha||a.nombre||a.titulo||a.especie||'') < (b.fechaSiembra||b.fecha||b.nombre||b.titulo||b.especie||'')?1:-1);
+ $('#content').innerHTML=`
+  <div class="toolbar">
+   <div class="search"><span class="si">🔍</span><input id="busca" placeholder="Buscar..." value="${esc(filtroBusqueda)}" oninput="filtroBusqueda=this.value;pintarTarjetasAhora('${store}')"></div>
+   ${opcFiltro.length? `<select class="filtro" onchange="filtroSel=this.value;pintarTarjetasAhora('${store}')"><option value="">Todos</option>${opcFiltro.map(o=>`<option ${filtroSel===o?'selected':''}>${o}</option>`).join('')}</select>`:''}
+  </div>
+  <div id="listaCont"></div>`;
+ window._datosLista={store,datos};
+ pintarFiltrado(store);
+}
+function pintarTarjetasAhora(store){ pintarFiltrado(store); }
+function pintarFiltrado(store){
+ const {datos}=window._datosLista||{datos:[]}; const sc=SCHEMAS[store];
+ let lista=datos.filter(r=>coincide(sc,r,filtroBusqueda));
+ if(filtroSel) lista=lista.filter(r=>filtraEspecial(store,r,filtroSel));
+ lista.sort((a,b)=> (a.fechaSiembra||a.fecha||a.nombre||a.titulo||a.especie||'') < (b.fechaSiembra||b.fecha||b.nombre||b.titulo||b.especie||'')?1:-1);
+ pintarTarjetas(store,lista);
+}
+function coincide(sc,r,q){ if(!q) return true; q=q.toLowerCase(); return sc.campos.some(f=>String(r[f.k]||'').toLowerCase().includes(q)); }
+function filtraEspecial(store,r,f){
+ if(store==='cultivos'){ if(f==='Activos') return !['Cosechado','Finalizado'].includes(r.estado); if(f==='Cosechados') return r.estado==='Cosechado'; if(f==='Finalizados') return r.estado==='Finalizado'; return r.categoria===f; }
+ if(store==='stock') return r.categoria===f;
+ if(store==='tareas') return r.estado===f;
+ if(store==='maquinaria') return r.estado===f;
+ if(store==='plantines') return r.estado===f;
+ return true;
+}
+function pintarTarjetas(store,lista){
+ const cont=$('#listaCont'); if(!cont) return;
+ if(!lista.length){ cont.innerHTML=tarjetaVacia(store); return; }
+ if(store==='tareas'){ cont.innerHTML=`<div class="lista">${lista.map(t=>tareaFila(t)).join('')}</div>`; return; }
+ if(store==='stock'){ cont.innerHTML=`<div class="grid">${lista.map(tarjetaStock).join('')}</div>`; return; }
+ cont.innerHTML=`<div class="grid">${lista.map(r=>tarjeta(store,r)).join('')}</div>`;
+}
+function tarjeta(store,r){
+ const sc=SCHEMAS[store]; let strip='', filas='';
+ if(store==='cultivos'){
+   strip=`<div class="card-strip" style="background:${colorBarra(r.estado)}"></div>`;
+   filas=`${fila('Chacarero',r.chacarero)}${fila('Siembra',fmtFecha(r.fechaSiembra))}${fila('Cosecha est.',fmtFecha(r.fechaCosechaEst))}${r.superficie?fila('Superficie',fmtNum(r.superficie)+' m²'):''}${r.cantSurcos?fila('Surcos',r.cantSurcos+(r.largoSurco?` × ${r.largoSurco}m`:'')):''}`;
+ } else if(store==='plantines'){
+   filas=`${fila('Siembra',fmtFecha(r.fechaSiembra))}${fila('Cantidad',(r.cantidad||'—')+' '+(r.unidadCant||''))}${fila('Trasplante est.',fmtFecha(r.fechaTrasplanteEst))}`;
+ } else if(store==='maquinaria'){
+   filas=`${fila('Tipo',r.tipo)}${r.horometro?fila('Horómetro',fmtNum(r.horometro)+' hs'):''}${fila('Año',r.anio)}`;
+ }
+ const estado = r.estado? `<span class="chip ${COLOR_ESTADO[r.estado]!=null?COLOR_ESTADO[r.estado]:''}">${esc(r.estado)}</span>` : '';
+ return `<div class="card click" onclick="abrirDetalle('${store}','${r.id}')">${strip}
+   <div class="card-body"><div class="card-tit">${sc.icono} ${esc(sc.titulo(r)||'(sin nombre)')}</div>
+    <div class="card-sub">${esc(sc.sub(r)||'—')}</div>${filas}
+    <div style="margin-top:11px;display:flex;gap:6px;flex-wrap:wrap">${estado}${r.categoria&&store!=='maquinaria'?`<span class="chip gris">${esc(r.categoria)}</span>`:''}</div>
+   </div></div>`;
+}
+function tarjetaStock(r){
+ const bajo=num(r.stockMin)>0 && num(r.cantidad)<=num(r.stockMin);
+ const venc = r.vencimiento && diasEntre(hoy(),r.vencimiento)<30;
+ return `<div class="card click" onclick="abrirDetalle('stock','${r.id}')">
+  <div class="card-strip" style="background:${bajo?'var(--rojo)':'var(--verde)'}"></div>
+  <div class="card-body"><div class="card-tit">📦 ${esc(r.nombre)}</div><div class="card-sub">${esc(r.categoria||'')}</div>
+   <div style="display:flex;align-items:baseline;gap:6px;margin:6px 0"><span style="font-size:26px;font-weight:800;color:${bajo?'var(--rojo)':'var(--verde-osc)'}">${fmtNum(num(r.cantidad))}</span><span style="color:var(--texto-suave);font-weight:600">${esc(r.unidad||'')}</span></div>
+   ${r.stockMin?fila('Mínimo',fmtNum(r.stockMin)+' '+(r.unidad||'')):''}${r.ubicacion?fila('Ubicación',r.ubicacion):''}
+   <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">${bajo?'<span class="chip rojo">⚠️ Bajo mínimo</span>':''}${venc?'<span class="chip naranja">Vence pronto</span>':''}</div>
+  </div></div>`;
+}
+function tareaFila(t){
+ const hecha=t.estado==='Hecha';
+ return `<div class="li">
+   <button class="li-ic" style="cursor:pointer;background:${hecha?'var(--verde)':'var(--verde-claro)'};color:${hecha?'#fff':'var(--verde)'}" onclick="event.stopPropagation();toggleTarea('${t.id}')">${hecha?'✓':'◻️'}</button>
+   <div class="li-main" onclick="abrirForm('tareas','${t.id}')" style="cursor:pointer"><div class="li-t" style="${hecha?'text-decoration:line-through;color:var(--texto-suave)':''}">${esc(t.titulo)}</div>
+   <div class="li-s">${esc(t.categoria||'General')}${t.fechaVenc?` · ${fmtFecha(t.fechaVenc)}`:''}</div></div>
+   <div class="li-r">${chipPrioridad(t.prioridad)} <button class="modal-x" style="display:inline-grid;width:30px;height:30px;margin-left:6px" onclick="event.stopPropagation();borrar('tareas','${t.id}')">🗑️</button></div></div>`;
+}
+async function toggleTarea(id){ const t=await dbGet('tareas',id); t.estado = t.estado==='Hecha'?'Pendiente':'Hecha'; await dbPut('tareas',t); renderLista('tareas'); }
+function fila(l,v){ if(v==null||v===''||v==='—') return ''; return `<div class="card-row"><span>${l}</span><span>${esc(v)}</span></div>`; }
+function colorBarra(e){ const m={'Planificado':'#9aa5a0','En almácigo':'var(--amarillo)','Sembrado':'var(--tierra)','Trasplantado':'var(--azul)','En crecimiento':'var(--verde)','En cosecha':'var(--acento)','Cosechado':'var(--acento)','Finalizado':'#9aa5a0'}; return m[e]||'var(--verde)'; }
+function tarjetaVacia(store){ const sc=SCHEMAS[store]; return `<div class="vacio"><div class="em">${sc.icono}</div><h3>Todavía no hay ${sc.singular.toLowerCase()}s</h3><p>Tocá el botón para agregar el primero.</p><br><button class="btn" onclick="abrirForm('${store}')">＋ Agregar ${sc.singular.toLowerCase()}</button></div>`; }
+
+/* ---------- INFO CULTIVOS ---------- */
+async function renderInfoLista(){
+ $('#accionTop').innerHTML=`<button class="btn" onclick="abrirForm('infocultivos')">＋ Nueva ficha</button>`;
+ cargando();
+ let datos; try{ datos=(await dbAll('infocultivos')).sort((a,b)=>a.cultivo<b.cultivo?-1:1); }catch(e){ return errorVista(e); }
+ const lista=datos.filter(r=>!filtroBusqueda||((r.cultivo||'')+(r.familia||'')).toLowerCase().includes(filtroBusqueda.toLowerCase()));
+ $('#content').innerHTML=`
+  <p style="color:var(--texto-suave);margin-bottom:16px">📖 Fichas agronómicas de referencia. Vienen cargadas con tus cultivos; podés editarlas o agregar las tuyas.</p>
+  <div class="toolbar"><div class="search"><span class="si">🔍</span><input placeholder="Buscar cultivo..." value="${esc(filtroBusqueda)}" oninput="filtroBusqueda=this.value;renderInfoLista()"></div></div>
+  <div class="grid">${lista.map(r=>`
+    <div class="card click" onclick="abrirDetalle('infocultivos','${r.id}')"><div class="card-strip" style="background:var(--tierra)"></div>
+     <div class="card-body"><div class="card-tit">📖 ${esc(r.cultivo)}</div><div class="card-sub">${esc(r.familia||'')}</div>
+     ${fila('Ciclo',r.ciclo)}${fila('Época',r.temporada)}${fila('Marco',r.marco)}</div></div>`).join('')||tarjetaVacia('infocultivos')}</div>`;
+}
+
+/* ---------- DETALLE ---------- */
+async function abrirDetalle(store,id){ if(!id) return; detalle={store,id}; tabActiva[store]= tabActiva[store]||0; $('#content').scrollTop=0; render(); }
+function volver(){ detalle=null; render(); }
+async function renderDetalle(){
+ const {store,id}=detalle; const sc=SCHEMAS[store];
+ cargando();
+ let r; try{ r=await dbGet(store,id); }catch(e){ return errorVista(e); }
+ if(!r){ volver(); return; }
+ if(store==='infocultivos') return renderInfoDetalle(r);
+ let head=`<button class="back" onclick="volver()">← Volver</button>
+  <div class="det-head"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+    <div><h2>${sc.icono} ${esc(sc.titulo(r))}</h2><div style="color:var(--texto-suave);font-weight:600">${esc(sc.sub(r)||'')}</div></div>
+    <div style="display:flex;gap:7px;flex-shrink:0"><button class="btn sec sm" onclick="abrirForm('${store}','${id}')">✏️ Editar</button><button class="btn peligro sm" onclick="borrar('${store}','${id}',true)">🗑️</button></div></div>
+   <div class="det-meta">${camposMeta(store,r)}</div>
+   <div class="det-grid">${camposDetalle(sc,r)}</div>
+   ${r.notas?`<div style="margin-top:14px"><div class="df"><div class="dl">Notas</div><div class="dv" style="font-weight:500;white-space:pre-wrap">${esc(r.notas)}</div></div></div>`:''}
+  </div>`;
+ const subs = SUBCOLS[store]||[];
+ const tabs = [{id:'fotos',l:'📷 Fotos'}, ...subs];
+ let tabsHtml = `<div class="tabs">${tabs.map((t,i)=>`<button class="tab ${tabActiva[store]===i?'activo':''}" onclick="setTab('${store}',${i})">${t.l}</button>`).join('')}</div>`;
+ $('#content').innerHTML = head + tabsHtml + `<div id="tabCont"></div>`;
+ renderTab(store,id,tabs[tabActiva[store]]||tabs[0]);
+}
+function setTab(store,i){ tabActiva[store]=i; renderDetalle(); }
+const SUBCOLS={
+ cultivos:[{id:'aplicaciones',l:'💧 Aplicaciones'},{id:'anotaciones',l:'📝 Anotaciones'},{id:'cosechas',l:'🧺 Cosechas'}],
+ plantines:[{id:'anotaciones',l:'📝 Anotaciones'}],
+ maquinaria:[{id:'mantenimientos',l:'🔧 Mantenimientos'}],
+ stock:[{id:'movimientos',l:'🔄 Movimientos'}],
+};
+const FK={cultivos:'cultivoId',plantines:'plantinId',maquinaria:'maquinaId',stock:'stockId'};
+function camposMeta(store,r){
+ let chips=[];
+ if(r.estado) chips.push(`<span class="chip ${COLOR_ESTADO[r.estado]!=null?COLOR_ESTADO[r.estado]:''}">${esc(r.estado)}</span>`);
+ if(r.categoria) chips.push(`<span class="chip gris">${esc(r.categoria)}</span>`);
+ if(store==='cultivos'&&r.fechaSiembra){ const d=diasEntre(r.fechaSiembra,hoy()); if(d>=0) chips.push(`<span class="chip tierra">🌱 día ${d} del ciclo</span>`); }
+ if(store==='stock'){ const bajo=num(r.stockMin)>0&&num(r.cantidad)<=num(r.stockMin); chips.push(`<span class="chip ${bajo?'rojo':'azul'}">${fmtNum(num(r.cantidad))} ${esc(r.unidad||'')} en stock</span>`); }
+ return chips.join('');
+}
+function camposDetalle(sc,r){
+ return sc.campos.filter(f=>!['notas','nombre','especie','cultivo'].includes(f.k)&&r[f.k]!=null&&r[f.k]!=='').map(f=>{
+   let v=r[f.k]; if(f.t==='date')v=fmtFecha(v); if(f.t==='number')v=fmtNum(num(v));
+   return `<div class="df"><div class="dl">${esc(f.l)}</div><div class="dv">${esc(v)}</div></div>`;
+ }).join('');
+}
+async function renderTab(store,id,tab){
+ const cont=$('#tabCont'); if(!cont||!tab) return;
+ if(tab.id==='fotos'){ return renderFotos(store,id,cont); }
+ const sc=SCHEMAS[tab.id]; const fk=FK[store];
+ cont.innerHTML=`<div class="cargando"><div class="spin"></div></div>`;
+ let items; try{ items=(await dbAll(tab.id)).filter(x=>x[fk]===id).sort((a,b)=>(a.fecha||'')<(b.fecha||'')?1:-1); }catch(e){ cont.innerHTML=''; return; }
+ cont.innerHTML=`
+  <div class="sub-add"><h3>${sc.icono} ${sc.singular}s <span style="color:var(--texto-suave);font-weight:600">(${items.length})</span></h3>
+   <button class="btn ghost sm" onclick="abrirForm('${tab.id}',null,{${fk}:'${id}'})">＋ Agregar</button></div>
+  ${items.length? `<div class="lista timeline">${items.map(x=>subFila(tab.id,x)).join('')}</div>` : vacioMini('Sin registros todavía')}`;
+}
+function subFila(store,x){
+ let t='',s='',r='';
+ if(store==='aplicaciones'){ t=esc(x.producto); s=`${esc(x.tipo||'')}${x.objetivo?' · '+esc(x.objetivo):''}${x.dosis?' · '+esc(x.dosis):''}`; r=`${fmtFecha(x.fecha)}${x.cantidad?`<br><b>${fmtNum(x.cantidad)} ${esc(x.unidad||'')}</b>`:''}`; }
+ else if(store==='cosechas'){ t=`${fmtNum(x.cantidad)} ${esc(x.unidad||'')}`; s=`${esc(x.calidad||'')}${x.destino?' · '+esc(x.destino):''}`; r=fmtFecha(x.fecha)+(x.precio?`<br><b>$${fmtNum(num(x.cantidad)*num(x.precio))}</b>`:''); }
+ else if(store==='anotaciones'){ t=esc(x.titulo); s=esc(x.texto||''); r=fmtFecha(x.fecha); }
+ else if(store==='mantenimientos'){ t=esc(x.descripcion); s=`${esc(x.tipo||'')}${x.horasMaquina?' · '+fmtNum(x.horasMaquina)+' hs':''}${x.repuestos?' · '+esc(x.repuestos):''}`; r=fmtFecha(x.fecha)+(x.costo?`<br><b>$${fmtNum(x.costo)}</b>`:''); }
+ else if(store==='movimientos'){ const ent=x.tipo==='Entrada'; t=`<span style="color:${ent?'var(--verde)':'var(--rojo)'}">${ent?'▲ +':'▼ −'}${fmtNum(x.cantidad)}</span> ${esc(x.tipo)}`; s=esc(x.motivo||''); r=fmtFecha(x.fecha); }
+ const sc=SCHEMAS[store];
+ return `<div class="li"><div class="li-ic">${sc.icono}</div><div class="li-main"><div class="li-t">${t}</div><div class="li-s">${s}</div></div>
+   <div class="li-r">${r} <button class="modal-x" style="display:inline-grid;width:28px;height:28px;margin-left:4px;vertical-align:middle" onclick="borrarSub('${store}','${x.id}')">🗑️</button></div></div>`;
+}
+async function borrarSub(store,id){ if(!confirm('¿Eliminar este registro?')) return; await dbDel(store,id); renderDetalle(); }
+
+/* ---------- FOTOS (base64 en la nube) ---------- */
+async function renderFotos(store,id,cont){
+ const r=await dbGet(store,id); const ids=r.fotos||[];
+ cont.innerHTML=`<div class="sub-add"><h3>📷 Fotos <span style="color:var(--texto-suave);font-weight:600">(${ids.length})</span></h3></div>
+   <div class="fotos-grid"><label class="foto-add"><span class="pl">＋</span>Agregar foto<input type="file" accept="image/*" capture="environment" style="display:none" onchange="subirFoto('${store}','${id}',this)"></label></div>`;
+ const grid=cont.querySelector('.fotos-grid');
+ for(const fid of ids){ let f; try{ f=await dbGet('fotos',fid); }catch{ continue; } if(!f) continue;
+   const div=document.createElement('div'); div.className='foto-th';
+   div.innerHTML=`<img src="${f.b64}" onclick="verFotoEl(this)"><button class="del" onclick="quitarFoto('${store}','${id}','${fid}')">✕</button>`;
+   grid.appendChild(div); }
+}
+async function subirFoto(store,id,inp){
+ const file=inp.files[0]; if(!file) return; toast('Procesando foto...');
+ try{ const b64=await comprimir(file); const fid=uid(); await dbPut('fotos',{id:fid,b64});
+   const r=await dbGet(store,id); r.fotos=r.fotos||[]; r.fotos.push(fid); await dbPut(store,r);
+   toast('Foto agregada ✓'); renderDetalle();
+ }catch(e){ toast('No se pudo subir la foto'); }
+}
+function comprimir(file){ return new Promise((res,rej)=>{ const img=new Image(); const fr=new FileReader();
+  fr.onload=()=>{ img.onload=()=>{ const max=1100; let w=img.width,h=img.height; if(w>max||h>max){ if(w>h){h=h*max/w;w=max;}else{w=w*max/h;h=max;} }
+    const cv=document.createElement('canvas'); cv.width=w;cv.height=h; cv.getContext('2d').drawImage(img,0,0,w,h);
+    res(cv.toDataURL('image/jpeg',0.72)); }; img.onerror=rej; img.src=fr.result; }; fr.onerror=rej; fr.readAsDataURL(file); }); }
+async function quitarFoto(store,id,fid){ if(!confirm('¿Eliminar esta foto?'))return; await dbDel('fotos',fid); const r=await dbGet(store,id); r.fotos=(r.fotos||[]).filter(x=>x!==fid); await dbPut(store,r); renderDetalle(); }
+function verFotoEl(img){ $('#visorImg').src=img.src; $('#visor').classList.add('abierto'); }
+function cerrarVisor(){ $('#visor').classList.remove('abierto'); }
+
+/* ---------- INFO detalle ---------- */
+function renderInfoDetalle(r){
+ const sec=(t,v)=> v? `<h4>${t}</h4><p>${esc(v).replace(/\n/g,'<br>')}</p>`:'';
+ $('#content').innerHTML=`<button class="back" onclick="volver()">← Volver</button>
+  <div class="det-head"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+    <div><h2>📖 ${esc(r.cultivo)}</h2><div style="color:var(--texto-suave);font-weight:600;font-style:italic">${esc(r.familia||'')}</div></div>
+    <div style="display:flex;gap:7px"><button class="btn sec sm" onclick="abrirForm('infocultivos','${r.id}')">✏️ Editar</button><button class="btn peligro sm" onclick="borrar('infocultivos','${r.id}',true)">🗑️</button></div></div>
+   <div class="det-grid" style="margin-top:14px">
+    ${r.ciclo?`<div class="df"><div class="dl">Ciclo</div><div class="dv">${esc(r.ciclo)}</div></div>`:''}
+    ${r.temporada?`<div class="df"><div class="dl">Época de siembra</div><div class="dv">${esc(r.temporada)}</div></div>`:''}
+    ${r.marco?`<div class="df"><div class="dl">Marco de plantación</div><div class="dv">${esc(r.marco)}</div></div>`:''}
+    ${r.profundidad?`<div class="df"><div class="dl">Profundidad</div><div class="dv">${esc(r.profundidad)}</div></div>`:''}
+    ${r.temperatura?`<div class="df"><div class="dl">Temperatura</div><div class="dv">${esc(r.temperatura)}</div></div>`:''}
+    ${r.riego?`<div class="df"><div class="dl">Riego</div><div class="dv">${esc(r.riego)}</div></div>`:''}
+   </div></div>
+  <div class="det-head info-prosa">
+   ${sec('🌿 Fertilización',r.fertilizacion)}${sec('🐛 Plagas comunes',r.plagas)}${sec('🍄 Enfermedades comunes',r.enfermedades)}
+   ${sec('🧺 Cosecha',r.cosecha)}${sec('🔄 Rotación y asociación',r.rotacion)}${sec('💡 Consejos del agrónomo',r.consejos)}
+  </div>`;
+}
+
+/* ---------- FORMULARIO ---------- */
+let formCtx=null;
+async function abrirForm(store,id=null,extra={}){
+ const sc=SCHEMAS[store];
+ const r = id? await dbGet(store,id) : Object.assign({},extra);
+ formCtx={store,id,extra};
+ $('#modalTit').textContent=(id?'Editar ':'Nuevo ')+sc.singular.toLowerCase();
+ let stockOps=null;
+ if(sc.campos.some(f=>f.stockRef)){ try{ stockOps=(await dbAll('stock')).map(s=>({v:s.id,t:`${s.nombre} (${fmtNum(num(s.cantidad))} ${s.unidad||''})`})); }catch{ stockOps=[]; } }
+ $('#modalBody').innerHTML = sc.campos.map(f=>campoHtml(f,r,stockOps)).join('');
+ agruparMedias();
+ $('#modalFoot').innerHTML=`<button class="btn sec" onclick="cerrarModal()">Cancelar</button><button class="btn" onclick="guardarForm()">${id?'Guardar':'Crear'}</button>`;
+ abrir();
+ const first=$('#modalBody input,#modalBody select,#modalBody textarea'); if(first) setTimeout(()=>first.focus(),120);
+}
+function campoHtml(f,r,stockOps){
+ let val = r[f.k]!=null? r[f.k] : (f.def==='hoy'?hoy():(f.def||''));
+ let inner;
+ if(f.t==='textarea') inner=`<textarea data-k="${f.k}" ${f.ph?`placeholder="${f.ph}"`:''}>${esc(val)}</textarea>`;
+ else if(f.t==='select'){
+   let optionsHtml='';
+   if(f.stockRef && stockOps){ optionsHtml=`<option value="">— No descontar —</option>`+stockOps.map(o=>`<option value="${o.v}" ${val===o.v?'selected':''}>${esc(o.t)}</option>`).join(''); }
+   else { const ops=f.op||[]; optionsHtml=`<option value="">—</option>`+ops.map(o=>`<option ${val===o?'selected':''}>${esc(o)}</option>`).join(''); if(f.libre) optionsHtml+=`<option value="__otro__">+ Otro (escribir)</option>`; }
+   inner=`<select data-k="${f.k}" ${f.libre?`onchange="if(this.value==='__otro__'){this.outerHTML='<input data-k=\\'${f.k}\\' placeholder=\\'Escribir...\\'>'}"`:''}>${optionsHtml}</select>`;
+ }
+ else inner=`<input type="${f.t}" data-k="${f.k}" value="${esc(val)}" ${f.ph?`placeholder="${f.ph}"`:''} ${f.t==='number'?'inputmode="decimal" step="any"':''}>`;
+ return `<div class="campo ${f.media?'es-media':''}"><label>${esc(f.l)}${f.req?' *':''}</label>${inner}${f.hint?`<div class="hint">${f.hint}</div>`:''}</div>`;
+}
+function agruparMedias(){
+ const body=$('#modalBody'); const nodes=[...body.children]; let i=0; const frag=document.createElement('div');
+ while(i<nodes.length){ const n=nodes[i];
+   if(n.classList.contains('es-media') && nodes[i+1] && nodes[i+1].classList.contains('es-media')){
+     const wrap=document.createElement('div'); wrap.className='campo-2'; wrap.appendChild(n.cloneNode(true)); wrap.appendChild(nodes[i+1].cloneNode(true)); frag.appendChild(wrap); i+=2;
+   } else { frag.appendChild(n.cloneNode(true)); i++; } }
+ body.innerHTML=''; [...frag.children].forEach(c=>body.appendChild(c));
+}
+async function guardarForm(){
+ const {store,id,extra}=formCtx; const sc=SCHEMAS[store];
+ const r = id? await dbGet(store,id) : Object.assign({},extra);
+ $('#modalBody').querySelectorAll('[data-k]').forEach(inp=>{ const k=inp.dataset.k; let v=inp.value.trim(); if(v==='__otro__')v=''; r[k]= (inp.type==='number')? (v===''?'':v) : v; });
+ for(const f of sc.campos){ if(f.req && (!r[f.k]||String(r[f.k]).trim()==='')){ toast('Falta: '+f.l); return; } }
+ try{
+   await dbPut(store,r);
+   if(store==='aplicaciones' && r.descontar && num(r.cantidad)>0){ await ajustarStock(r.descontar, -num(r.cantidad), 'Aplicación: '+r.producto, r.fecha); }
+   if(store==='movimientos'){ const s=await dbGet('stock',r.stockId); if(s){ s.cantidad=num(s.cantidad)+ (r.tipo==='Entrada'?1:-1)*num(r.cantidad); await dbPut('stock',s); } }
+   cerrarModal(); toast(id?'Guardado ✓':'Creado ✓');
+   if(detalle) renderDetalle(); else render();
+ }catch(e){ toast('Error al guardar: '+e.message); }
+}
+async function ajustarStock(stockId,delta,motivo,fecha){ const s=await dbGet('stock',stockId); if(!s)return; s.cantidad=num(s.cantidad)+delta; await dbPut('stock',s); await dbPut('movimientos',{id:uid(),stockId,fecha:fecha||hoy(),tipo:delta<0?'Salida':'Entrada',cantidad:Math.abs(delta),motivo}); }
+
+/* ---------- borrar ---------- */
+async function borrar(store,id,volverLista){
+ const sc=SCHEMAS[store];
+ if(!confirm(`¿Eliminar este ${sc.singular.toLowerCase()}? No se puede deshacer.`)) return;
+ try{
+   const r=await dbGet(store,id);
+   if(r&&r.fotos) for(const f of r.fotos) await dbDel('fotos',f);
+   const fk=FK[store]; if(fk){ for(const sub of (SUBCOLS[store]||[])){ const items=(await dbAll(sub.id)).filter(x=>x[fk]===id); for(const it of items) await dbDel(sub.id,it.id); } }
+   await dbDel(store,id);
+   toast('Eliminado'); if(volverLista){ detalle=null; } render();
+ }catch(e){ toast('Error: '+e.message); }
+}
+
+/* ---------- modal helpers ---------- */
+function abrir(){ $('#overlay').classList.add('abierto'); }
+function cerrarModal(){ $('#overlay').classList.remove('abierto'); }
+function abrirModalRaw(tit,body,foot){ $('#modalTit').textContent=tit; $('#modalBody').innerHTML=body; $('#modalFoot').innerHTML=foot||`<button class="btn sec" onclick="cerrarModal()" style="flex:1">Cerrar</button>`; abrir(); }
+function accionFab(){ const v=['cultivos','plantines','maquinaria','stock','tareas','infocultivos'].includes(vista)?vista:'cultivos'; abrirForm(v); }
+
+/* ---------- AJUSTES ---------- */
+async function renderAjustes(){
+ $('#content').innerHTML=`
+  <div class="card"><div class="card-body">
+   <div class="card-tit">👤 Tu cuenta</div>
+   ${fila('Nombre',USER.name||'—')}${fila('Email',USER.email)}
+   <div style="margin-top:14px"><button class="btn sec sm" onclick="cerrarSesion()">Cerrar sesión</button></div>
+  </div></div>
+  <div class="card" style="margin-top:16px"><div class="card-body">
+   <div class="card-tit">💾 Copia de seguridad</div>
+   <p style="color:var(--texto-suave);margin:8px 0 14px">Descargá un respaldo de todos tus datos (incluye fotos). Útil para guardar una copia o pasar a otra cuenta.</p>
+   <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button class="btn" onclick="exportar()">⬇️ Exportar copia</button>
+    <label class="btn sec" style="cursor:pointer">⬆️ Importar copia<input type="file" accept=".json" style="display:none" onchange="importar(this)"></label>
+   </div>
+  </div></div>
+  <div class="card" style="margin-top:16px"><div class="card-body">
+   <div class="card-tit">📲 Instalar en el celular</div>
+   <p style="color:var(--texto-suave);margin-top:8px">Abrí la app en el navegador del celular y elegí <b>“Agregar a pantalla de inicio”</b>. Te queda como una app con su ícono.</p>
+  </div></div>
+  <div class="card" style="margin-top:16px"><div class="card-body">
+   <div class="card-tit">⚠️ Zona de riesgo</div>
+   <p style="color:var(--texto-suave);margin:8px 0 12px">Borra TODOS tus datos (cultivos, stock, fotos, etc.) y vuelve a cargar las fichas de cultivos.</p>
+   <button class="btn peligro sm" onclick="resetTodo()">Borrar todos mis datos</button>
+  </div></div>
+  <div class="card" style="margin-top:16px"><div class="card-body">
+   <div class="card-tit">🌱 Agro LA · v1.0</div>
+   <p style="color:var(--texto-suave);margin-top:8px">Gestión hortícola en la nube: cultivos, almácigos, aplicaciones, maquinaria, stock, tareas e info agronómica.</p>
+  </div></div>`;
+}
+async function exportar(){
+ toast('Preparando copia...');
+ const data={app:'agro_la',version:1,fecha:new Date().toISOString(),usuario:USER.email,stores:{}};
+ for(const s of STORES_DATOS){ data.stores[s]=await dbAll(s); }
+ const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
+ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`agro-la-respaldo-${hoy()}.json`; a.click();
+ toast('Copia exportada ✓');
+}
+async function importar(inp){
+ const file=inp.files[0]; if(!file)return;
+ if(!confirm('Importar AGREGA los datos de la copia a tu cuenta actual. ¿Continuar?'))return;
+ try{ const data=JSON.parse(await file.text());
+  toast('Importando...');
+  for(const s of Object.keys(data.stores||{})){ for(const it of data.stores[s]){ if(it&&it.id) await dbPut(s,it); } }
+  toast('Datos importados ✓'); ir('panel');
+ }catch(e){ alert('No se pudo leer el archivo: '+e.message); }
+}
+async function resetTodo(){
+ if(!confirm('¿Borrar TODOS tus datos?'))return; if(!confirm('Esto no se puede deshacer. ¿Seguro?'))return;
+ toast('Borrando...');
+ for(const s of STORES_DATOS){ const items=await dbAll(s); for(const it of items) await dbDel(s,it.id); }
+ await seedSiFalta(); toast('Datos borrados'); ir('panel');
+}
+
+/* ---------- FICHAS PRE-CARGADAS ---------- */
+const FICHAS=[
+ {cultivo:'Cebolla de verdeo',familia:'Aliáceas (Allium fistulosum)',ciclo:'60–90 días',temporada:'Todo el año; ideal otoño y fin de invierno',marco:'Líneas a 20–30 cm; plantas a 3–5 cm',profundidad:'1–2 cm (semilla) o trasplante de gajos',temperatura:'13–24 °C',riego:'Frecuente y ligero, mantener húmedo',fertilizacion:'Alta demanda de nitrógeno. Abonado de base con compost y refuerzos de N (urea o nitrato) cada 20–25 días.',plagas:'Trips, mosca de la cebolla, pulgones.',enfermedades:'Mildiu, roya, podredumbre de raíces por exceso de humedad.',cosecha:'Cuando alcanza 30–40 cm de hoja y buen grosor de pseudotallo. Se arranca con cebolla; se ata en manojos.',rotacion:'No repetir con aliáceas. Buena asociada a zanahoria y lechuga.',consejos:'El aporque blanquea la base y mejora la presentación. Escalonar siembras para cosecha continua.'},
+ {cultivo:'Papa',familia:'Solanáceas (Solanum tuberosum)',ciclo:'90–120 días',temporada:'Fin de invierno–primavera; en zonas cálidas también fin de verano',marco:'Surcos a 70–80 cm; semilla a 30–35 cm',profundidad:'8–10 cm',temperatura:'15–20 °C; tuberiza mejor con noches frescas',riego:'Regular; crítico en tuberización. Suspender antes de cosecha.',fertilizacion:'Exigente en P y K. Fertilización de base NPK; aporque acompañado de nitrógeno.',plagas:'Polilla de la papa, escarabajo, pulgones, trips, nematodos.',enfermedades:'Tizón tardío (Phytophthora), tizón temprano, sarna, marchitez bacteriana.',cosecha:'Cuando el follaje seca. Curar en lugar seco y ventilado antes de almacenar.',rotacion:'Rotar 3–4 años; no seguir tomate, pimiento ni berenjena.',consejos:'Usar papa-semilla sana y certificada. El aporque evita el verdeo (solanina) de los tubérculos.'},
+ {cultivo:'Tomate',familia:'Solanáceas (Solanum lycopersicum)',ciclo:'90–130 días desde trasplante',temporada:'Trasplante en primavera tras pasar las heladas',marco:'Líneas a 1–1,2 m; plantas a 40–50 cm',profundidad:'Almácigo 0,5–1 cm; trasplante enterrando bien el cuello',temperatura:'18–27 °C',riego:'Constante y uniforme; el riego irregular causa rajado y podredumbre apical.',fertilizacion:'Demanda alta de K en fructificación. Fertirriego balanceado; cuidar el calcio para evitar podredumbre apical.',plagas:'Polilla del tomate (Tuta absoluta), mosca blanca, pulgones, trips, ácaros.',enfermedades:'Tizones, oídio, fusariosis, virosis (mosca blanca y trips).',cosecha:'Escalonada, en pintón o maduro según destino.',rotacion:'No repetir solanáceas; rotar con leguminosas o gramíneas.',consejos:'Tutorado y desbrote en indeterminados mejoran sanidad y calibre. Ventilar bajo cubierta.'},
+ {cultivo:'Pimiento',familia:'Solanáceas (Capsicum annuum)',ciclo:'110–140 días desde trasplante',temporada:'Trasplante en primavera, suelo templado',marco:'Líneas a 0,7–0,9 m; plantas a 35–45 cm',profundidad:'Almácigo 0,5–1 cm',temperatura:'20–28 °C; sensible al frío',riego:'Regular, sin encharcar; sensible a estrés hídrico.',fertilizacion:'Equilibrada NPK; aportes de calcio para prevenir podredumbre apical.',plagas:'Pulgones, trips, mosca blanca, ácaros.',enfermedades:'Phytophthora (tristeza), oídio, virosis.',cosecha:'En verde o tras virar a rojo/amarillo según variedad.',rotacion:'Igual que tomate: rotar solanáceas.',consejos:'No trasplantar hasta que pase el frío. Tutorar variedades de fruto grande.'},
+ {cultivo:'Ajo',familia:'Aliáceas (Allium sativum)',ciclo:'150–210 días',temporada:'Otoño (marzo–mayo en el sur)',marco:'Líneas a 30–40 cm; dientes a 10–12 cm',profundidad:'4–6 cm, punta hacia arriba',temperatura:'Necesita frío invernal; 13–24 °C',riego:'Moderado; suspender 2–3 semanas antes de cosecha.',fertilizacion:'N y K de base; evitar exceso de N tardío que retrasa el bulbo.',plagas:'Trips, nematodos, mosca de la cebolla, ácaro del ajo.',enfermedades:'Roya, fusarium, podredumbre blanca.',cosecha:'Cuando seca el follaje (1/3 a 1/2 de hojas secas). Curar a la sombra.',rotacion:'No repetir aliáceas 3–4 años.',consejos:'Plantar dientes grandes y sanos del borde del bulbo. La fecha define el calibre.'},
+ {cultivo:'Puerro',familia:'Aliáceas (Allium porrum)',ciclo:'120–180 días',temporada:'Almácigo fin de invierno–primavera',marco:'Líneas a 30–40 cm; plantas a 10–15 cm',profundidad:'Trasplante en hoyo profundo para blanquear el tallo',temperatura:'13–24 °C',riego:'Regular y constante.',fertilizacion:'Demanda de N media-alta; abonado de base y refuerzos.',plagas:'Trips, mosca del puerro, polilla.',enfermedades:'Roya, mildiu.',cosecha:'Cuando el tallo blanco alcanza buen grosor (2–3 cm).',rotacion:'Rotar aliáceas; asocia bien con zanahoria.',consejos:'El aporque progresivo alarga la parte blanca, la más valorada.'},
+ {cultivo:'Cebolla',familia:'Aliáceas (Allium cepa)',ciclo:'150–210 días',temporada:'Almácigo otoño/invierno según tipo',marco:'Líneas a 25–35 cm; plantas a 8–12 cm',profundidad:'Trasplante somero, sin enterrar el cuello',temperatura:'13–24 °C; bulbifica por fotoperíodo',riego:'Regular; suspender al iniciar la caída de hojas.',fertilizacion:'P y K importantes; N moderado y temprano.',plagas:'Trips (principal), mosca de la cebolla, nematodos.',enfermedades:'Mildiu, roya, podredumbres de cuello en poscosecha.',cosecha:'Cuando “se acuesta” el follaje. Curar antes de guardar.',rotacion:'Rotar aliáceas 3–4 años.',consejos:'Elegir variedad según fotoperíodo de la zona (día corto/intermedio/largo).'},
+ {cultivo:'Repollo blanco',familia:'Brássicas (Brassica oleracea var. capitata)',ciclo:'90–120 días desde trasplante',temporada:'Otoño e invierno; también fin de verano',marco:'Líneas a 50–60 cm; plantas a 40–50 cm',profundidad:'Almácigo 1 cm',temperatura:'15–20 °C; tolera frío',riego:'Regular y constante para buena formación de cabeza.',fertilizacion:'Exigente en N y K; abonado de base con compost.',plagas:'Oruga de las coles, pulgón ceniciento, mosca de la col.',enfermedades:'Hernia de las coles, mildiu, alternaria.',cosecha:'Cabeza firme y compacta al tacto.',rotacion:'No repetir brássicas 3 años (por hernia).',consejos:'Encalar suelos ácidos para prevenir hernia. Control temprano de orugas.'},
+ {cultivo:'Repollo morado',familia:'Brássicas (Brassica oleracea var. capitata rubra)',ciclo:'100–130 días desde trasplante',temporada:'Otoño e invierno',marco:'Líneas a 50–60 cm; plantas a 40–50 cm',profundidad:'Almácigo 1 cm',temperatura:'15–20 °C',riego:'Regular y constante.',fertilizacion:'Igual que repollo blanco; algo más de ciclo.',plagas:'Orugas, pulgones, mosca de la col.',enfermedades:'Hernia de las coles, alternaria.',cosecha:'Cabeza compacta; color intenso con buena luz.',rotacion:'Rotar brássicas.',consejos:'Su ciclo es más largo que el blanco; planificar la fecha de trasplante.'},
+ {cultivo:'Lechuga',familia:'Asteráceas (Lactuca sativa)',ciclo:'45–80 días',temporada:'Todo el año eligiendo variedad; evita calor extremo',marco:'Líneas a 25–30 cm; plantas a 25–30 cm',profundidad:'0,5 cm',temperatura:'10–20 °C; con calor se espiga y amarga',riego:'Frecuente y ligero; mantener húmedo.',fertilizacion:'N de respuesta rápida; cuidado con el exceso (nitratos).',plagas:'Pulgones, babosas, trips, minador.',enfermedades:'Mildiu, Sclerotinia, Botrytis.',cosecha:'Mañana temprano, planta bien formada.',rotacion:'Rota fácil; buena de ciclo corto entre cultivos largos.',consejos:'Escalonar siembras cada 10–15 días. En verano usar variedades resistentes al espigado y media sombra.'},
+ {cultivo:'Perejil',familia:'Apiáceas (Petroselinum crispum)',ciclo:'70–90 días a primer corte',temporada:'Casi todo el año; germinación lenta',marco:'Líneas a 20–25 cm',profundidad:'0,5–1 cm',temperatura:'13–22 °C',riego:'Regular; suelo húmedo para germinar.',fertilizacion:'N moderado; abonado de base.',plagas:'Pulgones, oruga de las umbelíferas, minador.',enfermedades:'Septoriosis, mildiu.',cosecha:'Corte de hojas exteriores; rebrota varias veces.',rotacion:'Rotar con no-apiáceas.',consejos:'Remojar la semilla 24 h acelera la germinación (naturalmente 2–4 semanas).'},
+ {cultivo:'Remolacha',familia:'Quenopodiáceas (Beta vulgaris)',ciclo:'70–100 días',temporada:'Otoño y primavera',marco:'Líneas a 25–30 cm; plantas a 8–10 cm',profundidad:'1,5–2 cm',temperatura:'15–22 °C',riego:'Regular; el déficit endurece la raíz.',fertilizacion:'K y boro importantes; el déficit de boro causa corazón negro.',plagas:'Pulgones, minador de la hoja.',enfermedades:'Cercospora (manchas foliares), mildiu.',cosecha:'Raíz de 5–8 cm de diámetro; no dejar pasar para que no se vuelva fibrosa.',rotacion:'Rotar; no seguir acelga/espinaca.',consejos:'Cada “semilla” (glomérulo) da varias plántulas: ralear para dar tamaño a la raíz.'},
+ {cultivo:'Zapallo',familia:'Cucurbitáceas (Cucurbita sp.)',ciclo:'90–140 días',temporada:'Primavera, con suelo cálido',marco:'Distancias amplias: 1,5–2 m entre plantas',profundidad:'2–3 cm',temperatura:'20–30 °C',riego:'Abundante en crecimiento; reducir en maduración del fruto.',fertilizacion:'Rico en materia orgánica; demanda alta de N, P y K.',plagas:'Vaquita de San Antonio, mosca blanca, pulgones, trips.',enfermedades:'Oídio, mildiu, podredumbres de fruto.',cosecha:'Zapallo de guarda: cuando el pedúnculo seca y la cáscara endurece.',rotacion:'Rotar cucurbitáceas; necesita mucho espacio.',consejos:'Favorecer la polinización (abejas). Tabla o paja bajo el fruto evita podredumbres.'},
+ {cultivo:'Maíz',familia:'Gramíneas (Zea mays)',ciclo:'90–130 días',temporada:'Primavera-verano, sin riesgo de heladas',marco:'Líneas a 70 cm; plantas a 20–25 cm',profundidad:'3–5 cm',temperatura:'18–30 °C',riego:'Crítico en floración y llenado de grano.',fertilizacion:'Muy exigente en N; aportes en V6–V8.',plagas:'Cogollero (Spodoptera), barrenador, gusano de la espiga.',enfermedades:'Royas, tizones, carbón del maíz.',cosecha:'Choclo: grano lechoso. Grano seco: cuando seca la chala.',rotacion:'Excelente cabeza de rotación; aporta rastrojo.',consejos:'Sembrar en bloque (varias líneas juntas), no en una sola fila, para asegurar polinización.'},
+ {cultivo:'Coliflor',familia:'Brássicas (Brassica oleracea var. botrytis)',ciclo:'90–120 días desde trasplante',temporada:'Otoño-invierno; sensible al calor',marco:'Líneas a 60 cm; plantas a 45–50 cm',profundidad:'Almácigo 1 cm',temperatura:'15–20 °C; clima fresco y estable',riego:'Constante; el estrés hídrico arruina la pella.',fertilizacion:'Exigente; N, K y micronutrientes (boro y molibdeno clave).',plagas:'Orugas, pulgones, mosca de la col.',enfermedades:'Hernia de las coles, mildiu, alternaria.',cosecha:'Pella firme, blanca y compacta, antes de que “grane”.',rotacion:'Rotar brássicas 3 años.',consejos:'Atar hojas sobre la pella para blanquearla. Déficit de boro causa tallos huecos.'},
+ {cultivo:'Brócoli',familia:'Brássicas (Brassica oleracea var. italica)',ciclo:'80–110 días desde trasplante',temporada:'Otoño-invierno',marco:'Líneas a 60 cm; plantas a 40–45 cm',profundidad:'Almácigo 1 cm',temperatura:'15–20 °C',riego:'Regular y constante.',fertilizacion:'Exigente en N y K; aportes de boro y molibdeno.',plagas:'Orugas, pulgón ceniciento, mosca de la col.',enfermedades:'Hernia de las coles, mildiu, alternaria.',cosecha:'Cabeza central compacta con botones cerrados. Rebrota en cabezas laterales.',rotacion:'Rotar brássicas.',consejos:'No demorar la cosecha: si amarillea y abre flor, pierde calidad. Aprovechar rebrotes laterales.'},
+];
+async function seedSiFalta(){
+ try{ const ya=await dbAll('infocultivos'); if(ya.length) return;
+   for(const f of FICHAS){ await dbPut('infocultivos',Object.assign({id:uid()},f)); }
+ }catch(e){ /* si falla, no bloquea */ }
+}
+
+/* ============================================================
+   AUTH
+   ============================================================ */
+let authTab='login';
+function setAuthTab(t){ authTab=t; $('#tabLogin').classList.toggle('activo',t==='login'); $('#tabReg').classList.toggle('activo',t==='reg');
+ $('#campoNombre').style.display = t==='reg'?'block':'none'; $('#authBtn').textContent = t==='reg'?'Crear cuenta':'Ingresar'; $('#authMsg').textContent=''; }
+async function enviarAuth(){
+ const email=$('#aEmail').value.trim(), pass=$('#aPass').value, nombre=$('#aNombre').value.trim();
+ const msg=$('#authMsg'); msg.style.color='var(--rojo)';
+ if(!email||!pass){ msg.textContent='Completá email y contraseña'; return; }
+ const btn=$('#authBtn'); btn.disabled=true; btn.textContent='Conectando...';
+ try{
+   const path = authTab==='reg'?'register':'login';
+   const body = authTab==='reg'? {email,password:pass,name:nombre} : {email,password:pass};
+   const data = await api(path,{method:'POST',body:JSON.stringify(body)});
+   TOKEN=data.token; USER=data.user; localStorage.setItem('agrola_token',TOKEN);
+   $('#auth').classList.remove('ver'); await iniciarApp();
+ }catch(e){ msg.textContent=e.message||'No se pudo conectar'; }
+ finally{ btn.disabled=false; btn.textContent= authTab==='reg'?'Crear cuenta':'Ingresar'; }
+}
+function cerrarSesion(expirada){
+ TOKEN=null; USER=null; localStorage.removeItem('agrola_token');
+ $('#app').classList.remove('ver'); $('#auth').classList.add('ver');
+ if(expirada){ $('#authMsg').textContent='Tu sesión expiró, ingresá de nuevo.'; }
+}
+async function iniciarApp(){
+ $('#app').classList.add('ver');
+ $('#userNm').textContent = USER.name||'Usuario';
+ $('#userEm').textContent = USER.email;
+ $('#userAv').textContent = (USER.name||USER.email||'A').trim().charAt(0).toUpperCase();
+ await seedSiFalta();
+ pintarNav(); vista='panel'; detalle=null; render();
+}
+
+/* ---------- init ---------- */
+window.addEventListener('keydown',e=>{ if(e.key==='Escape'){ cerrarModal(); cerrarVisor(); } });
+$('#aPass').addEventListener('keydown',e=>{ if(e.key==='Enter') enviarAuth(); });
+function ponerIconos(){
+ const svg=logoSVG();
+ $('#brandLogo').innerHTML=svg; $('#authLogo').innerHTML=`<div style="width:64px;height:64px">${svg}</div>`;
+ // favicon dinámico
+ const url='data:image/svg+xml,'+encodeURIComponent(svg);
+ let link=document.querySelector('link[rel=icon]'); if(!link){ link=document.createElement('link'); link.rel='icon'; document.head.appendChild(link); } link.href=url;
+ let al=document.createElement('link'); al.rel='apple-touch-icon'; al.href=url; document.head.appendChild(al);
+}
+(async function init(){
+ ponerIconos();
+ if(TOKEN){ try{ const me=await api('me'); USER=me.user; await iniciarApp(); return; }catch(e){ TOKEN=null; localStorage.removeItem('agrola_token'); } }
+ $('#auth').classList.add('ver'); setAuthTab('login');
+})();
+</script>
+</body>
+</html>
